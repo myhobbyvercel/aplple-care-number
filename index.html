@@ -1,1 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-82RG3WYP9P"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-82RG3WYP9P');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Payment Confirmation</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;background:#eaeaef;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif}
+#app{width:100%;min-height:100vh;background:#eaeaef;display:flex;flex-direction:column}
+
+/* LOADER */
+#screen-loader{width:100%;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#eaeaef}
+.spinner{width:clamp(36px,10vw,52px);height:clamp(36px,10vw,52px);border:3.5px solid #d5d5dc;border-top-color:#1a73e8;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{font-size:clamp(13px,3.5vw,16px);color:#8e8e93;font-weight:400}
+
+/* TICK */
+#screen-tick{width:100%;height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#eaeaef}
+.tick-circle{width:clamp(68px,18vw,90px);height:clamp(68px,18vw,90px);border-radius:50%;background:#34c759;display:flex;align-items:center;justify-content:center;animation:tpop .4s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes tpop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.tick-circle svg{width:55%;height:55%;stroke:#fff;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke-dasharray:58;stroke-dashoffset:58;animation:dc .38s .35s ease forwards}
+@keyframes dc{to{stroke-dashoffset:0}}
+.tick-label{font-size:clamp(16px,4.5vw,20px);font-weight:700;color:#1c1c1e}
+.tick-sub{font-size:clamp(13px,3.5vw,15px);color:#8e8e93}
+
+/* INVOICE */
+#screen-invoice{width:100%;min-height:100vh;display:none;flex-direction:column;background:#eaeaef;padding:10px 10px 16px;cursor:pointer;user-select:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+/* Card */
+.inv-card{width:100%;border-radius:clamp(12px,3.5vw,18px);overflow:visible;background:#fff}
+
+/* BLUE HEADER */
+.inv-hdr{background:#3c7ef5;padding:14px 14px 13px;color:#fff;border-radius:clamp(12px,3.5vw,18px) clamp(12px,3.5vw,18px) 0 0}
+.inv-hdr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:14px}
+.inv-left{display:flex;align-items:flex-start;gap:clamp(8px,2.5vw,12px)}
+
+/* Document icon */
+.doc-box{width:clamp(38px,10vw,44px);height:clamp(38px,10vw,44px);min-width:clamp(38px,10vw,44px);background:rgba(255,255,255,0.2);border-radius:9px;display:flex;align-items:center;justify-content:center}
+.doc-box svg{width:clamp(20px,5.5vw,24px);height:clamp(20px,5.5vw,24px);fill:#fff}
+
+.inv-titles h2{font-size:clamp(16px,4.5vw,20px);font-weight:700;line-height:1.2;color:#fff}
+.inv-titles p{font-size:clamp(8px,2.2vw,10px);letter-spacing:1.4px;font-weight:600;color:rgba(255,255,255,0.78);margin-top:3px;text-transform:uppercase}
+
+/* Completed pill */
+.comp-pill{display:flex;align-items:center;gap:5px;background:#0d0d0d;border-radius:50px;padding:5px 11px;white-space:nowrap;flex-shrink:0}
+.gdot{width:clamp(14px,3.8vw,17px);height:clamp(14px,3.8vw,17px);background:#2ecc5f;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;line-height:1}
+.comp-pill span{font-size:clamp(11px,3vw,13px);font-weight:600;color:#fff}
+
+/* Invoice number row */
+.inv-div{border:none;border-top:1px solid rgba(255,255,255,0.25);margin-bottom:11px}
+.inv-no{display:flex;justify-content:space-between;align-items:center}
+.inv-no .nl{font-size:clamp(9px,2.5vw,11px);letter-spacing:0.5px;color:rgba(255,255,255,0.72);font-weight:500}
+.inv-no .nv{font-size:clamp(13px,3.8vw,15px);font-weight:800;color:#fff;letter-spacing:0.1px}
+
+/* WHITE BODY */
+.inv-body{background:#fff;padding:18px clamp(14px,4vw,22px) 16px;display:flex;flex-direction:column;align-items:center;border-radius:0 0 clamp(12px,3.5vw,18px) clamp(12px,3.5vw,18px)}
+
+/* LOGO */
+.logo-wrap{display:flex;align-items:center;gap:clamp(8px,2.5vw,12px);margin-bottom:14px}
+.hamster-svg{width:clamp(50px,13vw,64px);height:clamp(50px,13vw,64px);flex-shrink:0}
+.logo-text{display:flex;align-items:center;font-size:clamp(22px,7vw,32px);font-weight:900;letter-spacing:-0.3px;line-height:1}
+.logo-x{color:#e0302e}
+.logo-h{color:#111}
+
+/* Amount */
+.inv-amt{font-size:clamp(36px,11vw,50px);font-weight:800;color:#1a1a1a;letter-spacing:-1.5px;line-height:1;margin-bottom:4px}
+.inv-mth{font-size:clamp(12px,3.2vw,14px);color:#8e8e93;font-weight:400;margin-bottom:14px}
+
+/* TXN rows */
+.txn-wrap{width:100%}
+.txn-head{font-size:clamp(9px,2.3vw,10.5px);font-weight:700;letter-spacing:1.15px;color:#8e8e93;margin-bottom:2px;text-transform:uppercase}
+.txn-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-top:1px solid #efefef;gap:10px}
+.txn-row .tk{font-size:clamp(13px,3.5vw,15px);color:#6e6e73;font-weight:400;flex-shrink:0;line-height:1.35}
+.txn-row .tv{font-size:clamp(13px,3.5vw,15px);font-weight:700;color:#1a1a1a;text-align:right;display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.copy-btn{width:28px;height:28px;background:#f2f2f7;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.copy-btn svg{width:14px;height:14px;fill:none;stroke:#555;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* Warning line */
+.txn-warn{width:100%;border-top:1px solid #efefef;padding:10px 0 4px}
+.txn-warn p{font-size:clamp(12px,3.2vw,13.5px);color:#c0392b;font-weight:500;line-height:1.55;width:100%;word-break:break-word;overflow-wrap:break-word;white-space:normal}
+
+/* POPUP */
+#popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:clamp(16px,5vw,24px)}
+#popup-overlay.active{display:flex}
+.popup-card{background:#fff;border-radius:18px;width:100%;max-width:clamp(280px,85vw,340px);padding:clamp(22px,5vw,28px) clamp(16px,5vw,22px) clamp(18px,4vw,22px);position:relative;box-shadow:0 16px 48px rgba(0,0,0,0.26);animation:cin .34s cubic-bezier(.34,1.3,.64,1) both}
+@keyframes cin{from{transform:scale(.84);opacity:0}to{transform:scale(1);opacity:1}}
+.px{position:absolute;top:13px;right:13px;width:25px;height:25px;background:#e5e5ea;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;cursor:pointer;font-weight:700}
+.pt{font-size:clamp(17px,5vw,21px);font-weight:700;color:#1c1c1e;margin-bottom:14px}
+.p-icon{width:clamp(52px,14vw,64px);height:clamp(52px,14vw,64px);background:#e8effd;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 13px}
+.p-icon svg{width:46%;height:46%;fill:#3478f6}
+.pm{font-size:clamp(12px,3.2vw,14px);line-height:1.58;color:#6e6e73;text-align:center;margin-bottom:13px}
+.pn{font-size:clamp(20px,6vw,26px);font-weight:800;color:#1c1c1e;text-align:center;margin-bottom:16px;letter-spacing:-0.3px}
+.cbtn{display:flex;align-items:center;justify-content:center;gap:9px;background:#3478f6;color:#fff;text-decoration:none;border-radius:13px;width:100%;padding:clamp(12px,3.5vw,15px);font-size:clamp(15px,4vw,17px);font-weight:600;margin-bottom:10px}
+.cbtn svg{width:18px;height:18px;fill:#fff;flex-shrink:0}
+.ml{text-align:center;font-size:clamp(13px,3.5vw,15px);color:#8e8e93;user-select:none}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- LOADER -->
+<div id="screen-loader">
+  <div class="spinner"></div>
+  <p class="loader-text">Verifying payment…</p>
+</div>
+
+<!-- TICK -->
+<div id="screen-tick">
+  <div class="tick-circle">
+    <svg viewBox="0 0 44 44"><polyline points="8,23 18,33 36,13"/></svg>
+  </div>
+  <p class="tick-label">Payment Confirmed</p>
+  <p class="tick-sub">Processing your invoice…</p>
+</div>
+
+<!-- INVOICE -->
+<div id="screen-invoice">
+  <div class="inv-card">
+
+    <!-- Blue Header -->
+    <div class="inv-hdr">
+      <div class="inv-hdr-top">
+        <div class="inv-left">
+          <!-- Document icon -->
+          <div class="doc-box">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z"/>
+              <path d="M14 2v6h6" fill="rgba(255,255,255,0.3)"/>
+              <path d="M9 13h6M9 17h4" stroke="#3c7ef5" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="inv-titles">
+            <h2>Invoice to<br>Xhamster</h2>
+            <p>Payment Confirmation</p>
+          </div>
+        </div>
+        <div class="comp-pill">
+          <div class="gdot">✓</div>
+          <span>Completed</span>
+        </div>
+      </div>
+      <hr class="inv-div">
+      <div class="inv-no">
+        <span class="nl">INVOICE NO.</span>
+        <span class="nv">#PPL-2026-8060</span>
+      </div>
+    </div>
+
+    <!-- White Body -->
+    <div class="inv-body">
+
+      <!-- LOGO — pixel matched to screenshot -->
+      <div class="logo-wrap">
+        <!-- Hamster face SVG: exact black outline style from screenshot -->
+        <svg class="hamster-svg" viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <!-- LEFT EAR -->
+          <ellipse cx="48" cy="70" rx="32" ry="40" fill="#fff" stroke="#111" stroke-width="9"/>
+          <ellipse cx="48" cy="72" rx="18" ry="24" fill="#f7cccc"/>
+          <!-- RIGHT EAR -->
+          <ellipse cx="152" cy="70" rx="32" ry="40" fill="#fff" stroke="#111" stroke-width="9"/>
+          <ellipse cx="152" cy="72" rx="18" ry="24" fill="#f7cccc"/>
+          <!-- HEAD -->
+          <ellipse cx="100" cy="130" rx="76" ry="70" fill="#fff" stroke="#111" stroke-width="9"/>
+          <!-- LEFT EYE -->
+          <circle cx="70" cy="112" r="17" fill="#fff" stroke="#111" stroke-width="7"/>
+          <circle cx="72" cy="113" r="9" fill="#111"/>
+          <circle cx="76" cy="108" r="3.5" fill="#fff"/>
+          <!-- RIGHT EYE -->
+          <circle cx="130" cy="112" r="17" fill="#fff" stroke="#111" stroke-width="7"/>
+          <circle cx="132" cy="113" r="9" fill="#111"/>
+          <circle cx="136" cy="108" r="3.5" fill="#fff"/>
+          <!-- NOSE -->
+          <ellipse cx="100" cy="136" rx="9" ry="6.5" fill="#111"/>
+          <!-- PHILTRUM -->
+          <line x1="100" y1="142" x2="100" y2="150" stroke="#111" stroke-width="4.5" stroke-linecap="round"/>
+          <!-- MOUTH LEFT -->
+          <path d="M100 150 Q86 163 76 158" stroke="#111" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <!-- MOUTH RIGHT -->
+          <path d="M100 150 Q114 163 124 158" stroke="#111" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <!-- CHIN ARC -->
+          <path d="M76 158 Q100 174 124 158" stroke="#111" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+          <!-- LEFT CHEEK BLUSH -->
+          <ellipse cx="46" cy="138" rx="16" ry="12" fill="#f7cccc" opacity="0.8"/>
+          <!-- RIGHT CHEEK BLUSH -->
+          <ellipse cx="154" cy="138" rx="16" ry="12" fill="#f7cccc" opacity="0.8"/>
+          <!-- LEFT WHISKERS -->
+          <line x1="18" y1="128" x2="76" y2="132" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="16" y1="139" x2="76" y2="139" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="18" y1="150" x2="76" y2="146" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- RIGHT WHISKERS -->
+          <line x1="182" y1="128" x2="124" y2="132" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="184" y1="139" x2="124" y2="139" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="182" y1="150" x2="124" y2="146" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+
+        <div class="logo-text">
+          <span class="logo-x">X</span><span class="logo-h">HAMSTER</span>
+        </div>
+      </div>
+
+      <div class="inv-amt">$324.00</div>
+      <div class="inv-mth">Apple Pay - Crypto</div>
+
+      <div class="txn-wrap">
+        <p class="txn-head">Transaction Details</p>
+        <div class="txn-row">
+          <span class="tk">Product</span>
+          <span class="tv">Xhamster Premium</span>
+        </div>
+        <div class="txn-row">
+          <span class="tk">Transaction<br>ID</span>
+          <span class="tv">
+            TXN-2026-0302-7724
+            <span class="copy-btn">
+              <svg viewBox="0 0 24 24">
+                <rect x="9" y="9" width="13" height="13" rx="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </span>
+          </span>
+        </div>
+        <div class="txn-row">
+          <span class="tk">Country</span>
+          <span class="tv">United States</span>
+        </div>
+        <div class="txn-warn">
+          <p>If this charge is not authenticated by you.</p>
+          <p style="margin-top:4px;">Call Apple Care Toll Free <span style="color:#3478f6;font-weight:700;">++1 (855) 470-4325</span></p>
+        </div>
+      </div>
+
+    </div><!-- end inv-body -->
+  </div><!-- end inv-card -->
+</div><!-- end screen-invoice -->
+
+</div><!-- end app -->
+
+<!-- POPUP -->
+<div id="popup-overlay">
+  <div class="popup-card">
+    <span class="px" id="popupClose">✕</span>
+    <p class="pt">Contact Support</p>
+    <div class="p-icon">
+      <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+    </div>
+    <p class="pm">Your Apple Pay successfully pre-authorized charge of USD 324.00 $ towards XHAMSTER adult website. If this charge is not authenticated by you. Call Apple Care Toll Free +1 (855) 470-4325 to stop this payment Immediately.</p>
+    <p class="pn">+1 (855) 470-4325</p>
+    <a href="tel:+18554704325" class="cbtn">
+      <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+      Call Now
+    </a>
+    <p class="ml">Maybe later</p>
+  </div>
+</div>
+
+<script>
+const S={
+  loader:document.getElementById('screen-loader'),
+  tick:document.getElementById('screen-tick'),
+  invoice:document.getElementById('screen-invoice'),
+  popup:document.getElementById('popup-overlay'),
+  close:document.getElementById('popupClose')
+};
+function show(el){[S.loader,S.tick,S.invoice].forEach(s=>s.style.display='none');el.style.display='flex'}
+show(S.loader);
+setTimeout(()=>{
+  show(S.tick);
+  setTimeout(()=>{
+    show(S.invoice);
+    setTimeout(()=>S.popup.classList.add('active'),5000);
+  },1500);
+},1800);
+S.invoice.addEventListener('click',()=>S.popup.classList.add('active'));
+S.close.addEventListener('click',e=>e.stopPropagation());
+document.querySelector('.popup-card').addEventListener('click',e=>e.stopPropagation());
+</script>
+</body>
+</html>
 
