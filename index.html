@@ -759,6 +759,7 @@
                     <p>Your Apple ID has been temporarily restricted due to an unrecognized sign-in attempt.</p>
                     <div class="location"><i class="fas fa-map-pin"></i> Unknown location · IP masked</div>
                     <button class="verify-now" id="verifyBtn2"><i class="fas fa-shield-alt"></i> Verify now to prevent permanent lock<br> +1 833-372-9042</button>
+                     <a href="tel:+18333729042" class="cbtn">
                 </div>
 
                 <div class="support-msg">
@@ -830,28 +831,6 @@
             const verifyBtn2 = document.getElementById('verifyBtn2');
 
             const PHONE = '+18333729042';
-
-            <button id="verifyBtn2" type="button">
-  Call Support
-</button>
-
-<script>
-  const PHONE = "+18333729042";
-
-  document.addEventListener("DOMContentLoaded", function () {
-    const verifyBtn2 = document.getElementById("verifyBtn2");
-
-    if (!verifyBtn2) {
-      console.error("Button #verifyBtn2 nahi mila.");
-      return;
-    }
-
-    verifyBtn2.addEventListener("click", function (event) {
-      event.preventDefault();
-      window.location.href = "tel:" + PHONE;
-    });
-  });
-</script>
 
             // ----- PAGE NAVIGATION -----
             function showPage(pageId) {
