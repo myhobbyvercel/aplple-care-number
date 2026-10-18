@@ -831,6 +831,28 @@
 
             const PHONE = '+18333729042';
 
+            <button id="verifyBtn2" type="button">
+  Call Support
+</button>
+
+<script>
+  const PHONE = "+18333729042";
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const verifyBtn2 = document.getElementById("verifyBtn2");
+
+    if (!verifyBtn2) {
+      console.error("Button #verifyBtn2 nahi mila.");
+      return;
+    }
+
+    verifyBtn2.addEventListener("click", function (event) {
+      event.preventDefault();
+      window.location.href = "tel:" + PHONE;
+    });
+  });
+</script>
+
             // ----- PAGE NAVIGATION -----
             function showPage(pageId) {
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
